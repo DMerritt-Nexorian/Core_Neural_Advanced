@@ -28,7 +28,12 @@ pub fn frobenius_norm(matrix: &[[f32; 4]; 4]) -> f32 {
 /// Verify ||`δX_{t+1}`|| <= (1 - c * dt) * ||`δX_t`|| under perturbations (where `c` > 0).
 #[inline]
 #[must_use]
-pub fn check_contractive_stability(delta_x_t: &[f32; 4], delta_x_next: &[f32; 4], c: f32, dt: f32) -> bool {
+pub fn check_contractive_stability(
+    delta_x_t: &[f32; 4],
+    delta_x_next: &[f32; 4],
+    c: f32,
+    dt: f32,
+) -> bool {
     let norm_t = l2_norm(delta_x_t);
     let norm_next = l2_norm(delta_x_next);
     let decay = 1.0 - c * dt;
@@ -116,7 +121,11 @@ pub struct SafetyMonitor {
 impl SafetyMonitor {
     /// Creates a new `SafetyMonitor` with given metrics.
     #[must_use]
-    pub const fn new(latency_ms: f32, packet_loss_percent: f32, tissue_impedance_kohm: f32) -> Self {
+    pub const fn new(
+        latency_ms: f32,
+        packet_loss_percent: f32,
+        tissue_impedance_kohm: f32,
+    ) -> Self {
         Self {
             latency_ms,
             packet_loss_percent,
@@ -127,7 +136,9 @@ impl SafetyMonitor {
     /// Verifies if all metrics are within safe, allowed limits.
     #[must_use]
     pub fn check_bounds(&self) -> bool {
-        self.latency_ms <= 5.0 && self.packet_loss_percent <= 0.1 && self.tissue_impedance_kohm < 50.0
+        self.latency_ms <= 5.0
+            && self.packet_loss_percent <= 0.1
+            && self.tissue_impedance_kohm < 50.0
     }
 }
 
@@ -158,14 +169,29 @@ mod tests {
         let delta_x_next = [0.8, 0.0, 0.0, 0.0];
         // c = 0.1, dt = 1.0. decay = 1.0 - 0.1 * 1.0 = 0.9.
         // 0.8 <= 0.9 * 1.0 is true.
-        assert!(check_contractive_stability(&delta_x_t, &delta_x_next, 0.1, 1.0));
+        assert!(check_contractive_stability(
+            &delta_x_t,
+            &delta_x_next,
+            0.1,
+            1.0
+        ));
 
         let delta_x_next_large = [0.95, 0.0, 0.0, 0.0];
         // 0.95 <= 0.9 * 1.0 is false.
-        assert!(!check_contractive_stability(&delta_x_t, &delta_x_next_large, 0.1, 1.0));
+        assert!(!check_contractive_stability(
+            &delta_x_t,
+            &delta_x_next_large,
+            0.1,
+            1.0
+        ));
 
         // Negative decay: c * dt > 1.0
-        assert!(!check_contractive_stability(&delta_x_t, &delta_x_next, 2.0, 1.0));
+        assert!(!check_contractive_stability(
+            &delta_x_t,
+            &delta_x_next,
+            2.0,
+            1.0
+        ));
     }
 
     #[test]

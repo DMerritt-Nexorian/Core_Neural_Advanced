@@ -47,7 +47,9 @@ impl OpenBciFrame {
         // 2. Checksum validation
         // We use the last byte of auxiliary data (byte 31) as the 8-bit wrapping sum of the preceding 31 bytes (0..31).
         let expected_checksum = packet[31];
-        let computed_checksum = packet[0..31].iter().fold(0u8, |acc, &b| acc.wrapping_add(b));
+        let computed_checksum = packet[0..31]
+            .iter()
+            .fold(0u8, |acc, &b| acc.wrapping_add(b));
         if computed_checksum != expected_checksum {
             return Err(FrameError::ChecksumMismatch);
         }
@@ -188,7 +190,10 @@ mod tests {
         let mut packet = [0u8; 33];
         packet[0] = 0x00;
         packet[32] = 0xC0;
-        assert_eq!(OpenBciFrame::decode(&packet), Err(FrameError::InvalidHeader));
+        assert_eq!(
+            OpenBciFrame::decode(&packet),
+            Err(FrameError::InvalidHeader)
+        );
     }
 
     #[test]
@@ -196,7 +201,10 @@ mod tests {
         let mut packet = [0u8; 33];
         packet[0] = 0xA0;
         packet[32] = 0x00;
-        assert_eq!(OpenBciFrame::decode(&packet), Err(FrameError::InvalidStopByte));
+        assert_eq!(
+            OpenBciFrame::decode(&packet),
+            Err(FrameError::InvalidStopByte)
+        );
     }
 
     #[test]
@@ -205,7 +213,10 @@ mod tests {
         packet[0] = 0xA0;
         packet[32] = 0xC0;
         packet[31] = 0x00; // Expected checksum should be 0xA0, but we set 0x00
-        assert_eq!(OpenBciFrame::decode(&packet), Err(FrameError::ChecksumMismatch));
+        assert_eq!(
+            OpenBciFrame::decode(&packet),
+            Err(FrameError::ChecksumMismatch)
+        );
     }
 
     #[test]
@@ -220,7 +231,10 @@ mod tests {
         packet[4] = 0xFF;
         // Recompute checksum: 0xA0 + 0x01 + 0x7F + 0xFF + 0xFF = 798 modulo 256 = 230 (0x1E)
         packet[31] = 0x1E;
-        assert_eq!(OpenBciFrame::decode(&packet), Err(FrameError::ValueOutOfBounds));
+        assert_eq!(
+            OpenBciFrame::decode(&packet),
+            Err(FrameError::ValueOutOfBounds)
+        );
     }
 
     #[test]
