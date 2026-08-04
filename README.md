@@ -72,16 +72,18 @@ chmod +x tests/periodic_audit.sh
 ./tests/periodic_audit.sh
 
 System Operational Boundaries
-| Metric | Target Boundary | Enforcement Mechanism |
+
+
+ | Metric | Target Boundary | Enforcement Mechanism |
 |---|---|---|
-| Max System Latency | \le 5.0\text{ ms} | Constant-time \mathcal{O}(1) execution loops |
-| Max Packet Loss | \le 0.1\% | Active ring buffer health telemetry |
-| Tissue Impedance | < 50.0\text{ k}\Omega | Subdermal hardware monitor checks |
-| Memory Allocation | 0\text{ bytes dynamic} | #![no_std] + static stack array storage |
-| Stability Bounds | \Vert{}A\Vert{}_F \le W_{\max} | Convex Frobenius norm projection (\Pi_C) |
-License & Public Domain Dedication
-This work is dedicated to the public domain under the Creative Commons CC0 1.0 Universal (CC0 1.0) dedication. You may copy, modify, distribute, and perform the work, even for commercial purposes, without asking permission.
-Author / Entity: Dennis W. Merritt / Nexorian Corporation
-Contact: NexorianLabs@icloud.com
-Disclaimer: This software specification is provided for research and high-assurance engineering applications. It does not constitute medical advice or regulatory approval for clinical use.
+| Max System Latency | <= 5.0 ms | Constant-time O(1) execution loops |
+| Max Packet Loss | <= 0.1% | Active ring buffer health telemetry |
+| Tissue Impedance | < 50.0 k\Omega | Subdermal hardware monitor checks |
+| Memory Allocation | 0 bytes dynamic | #![no_std] + static stack array storage |
+| Stability Bounds |  |  |
+| License & Public Domain Dedication | This work is dedicated to the public domain under the Creative Commons CC0 1.0 Universal (CC0 1.0) dedication. You may copy, modify, distribute, and perform the work, even for commercial purposes, without asking permission. |  |
+| Author / Entity | Dennis W. Merritt / Nexorian Corporation |  |
+| Contact | NexorianLabs@icloud.com |  |
+| Disclaimer | This software specification is provided for research and high-assurance engineering applications. It does not constitute medical advice or regulatory approval for clinical use. |  |
+
 
