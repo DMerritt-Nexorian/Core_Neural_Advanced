@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Stable Toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          targets: thumbv7em-none-eabi, riscv32imac-unknown-none-elf
+          components: clippy, rustfmt
+
+      - name: Run fmt check
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace
+
+      - name: Verify cross-compilation ARM
+        run: cargo build --target thumbv7em-none-eabi
+
+      - name: Verify cross-compilation RISC-V
+        run: cargo build --target riscv32imac-unknown-none-elf
+
+  kani:
+    name: Formal Verification (Kani)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Kani
+        run: |
+          cargo install --locked kani-verifier
+          cargo kani setup
+
+      - name: Verify SNN and OpenBCI with Kani
+        run: cargo kani --harness prove_decode_does_not_panic -p core_neural_core
