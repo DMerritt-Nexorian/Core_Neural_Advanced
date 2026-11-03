@@ -1,0 +1,73 @@
+name: Nexorian Continuous Assurance
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: assurance-\${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    name: Build and static verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Node dependencies
+        if: hashFiles('package.json') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f package-lock.json ]]; then
+            npm ci --ignore-scripts --no-audit --no-fund
+          elif [[ -f pnpm-lock.yaml ]]; then
+            corepack enable
+            pnpm install --frozen-lockfile --ignore-scripts
+          elif [[ -f yarn.lock ]]; then
+            corepack enable
+            yarn install --frozen-lockfile --ignore-scripts
+          else
+            npm install --ignore-scripts --no-package-lock --no-audit --no-fund
+          fi
+      - name: Run Node project checks
+        if: hashFiles('package.json') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test --if-present
+          npm run lint --if-present
+          npm run typecheck --if-present
+          npm run build --if-present
+      - name: Set up Python
+        if: hashFiles('**/*.py') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Compile Python sources
+        if: hashFiles('**/*.py') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -type f -name '*.py' -not -path './.git/*' -not -path './.venv/*' -print0 | xargs -0 -r python -m py_compile
+      - name: Run Go tests
+        if: hashFiles('go.mod') != ''
+        run: go test ./...
+      - name: Run Rust tests
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo test --locked
+      - name: Verification scope note
+        if: always()
+        run: |
+          echo "This workflow runs only checks supported by manifests present in this repository."
+          echo "A green run does not establish production deployment, security certification, or functional correctness beyond the executed checks."
