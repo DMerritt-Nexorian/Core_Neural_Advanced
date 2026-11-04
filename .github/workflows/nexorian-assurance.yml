@@ -65,7 +65,15 @@ jobs:
         run: go test ./...
       - name: Run Rust tests
         if: hashFiles('Cargo.toml') != ''
-        run: cargo test --locked
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f Cargo.lock ]]; then
+            cargo test --locked
+          else
+            echo "Cargo.lock absent; run tests while generating a lockfile in the runner. Pin and commit Cargo.lock for reproducible dependency resolution."
+            cargo test
+          fi
       - name: Verification scope note
         if: always()
         run: |

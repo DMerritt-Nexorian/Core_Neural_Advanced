@@ -76,9 +76,7 @@ impl TrajectoryState {
 
     /// Reset trajectory state to zeros.
     pub fn reset(&mut self) {
-        for val in &mut self.state {
-            *val = 0.0;
-        }
+        self.state.fill(0.0);
     }
 
     /// Trajectory Update: X_{t+1} = A * `X_t` + B * `S_t`

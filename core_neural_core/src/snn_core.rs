@@ -44,9 +44,7 @@ impl SnnState {
 
     /// Reset all potentials to 0.0.
     pub fn reset(&mut self) {
-        for v in &mut self.potentials {
-            *v = 0.0;
-        }
+        self.potentials.fill(0.0);
     }
 
     /// Discrete membrane potential update & deterministic spike emission.
