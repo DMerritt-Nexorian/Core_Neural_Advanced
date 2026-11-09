@@ -4,6 +4,7 @@
 #![allow(unexpected_cfgs)]
 
 pub mod openbci_hal;
+pub mod pipeline;
 pub mod safety_core;
 pub mod snn_core;
 
