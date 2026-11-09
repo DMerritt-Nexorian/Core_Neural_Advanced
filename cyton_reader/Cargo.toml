@@ -1,0 +1,12 @@
+[package]
+name = "cyton_reader"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cyton_reader"
+path = "src/main.rs"
+
+[dependencies]
+core_neural_core = { path = "../core_neural_core" }
+serialport = "4.6"

@@ -2,6 +2,7 @@
 members = [
     "core_neural_core",
     "core_neural_emb",
+    "cyton_reader",
 ]
 resolver = "2"
 
