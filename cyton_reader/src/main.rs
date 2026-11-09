@@ -1,6 +1,6 @@
 //! Live OpenBCI Cyton serial reader.
 //! Opens the serial port, reads raw 33-byte packets, decodes them with the existing
-//! OpenBciFrame::decode, and feeds each frame into pipeline::step.
+//! `OpenBciFrame::decode`, and feeds each frame into `pipeline::step`.
 //!
 //! Usage:
 //!   cargo run -p cyton_reader -- /dev/ttyUSB0
@@ -9,9 +9,8 @@
 //! Default baud is 115200 (Cyton standard).
 
 use core_neural_core::openbci_hal::OpenBciFrame;
-use core_neural_core::pipeline::PipelineState;
+use core_neural_core::pipeline::{PipelineState, PipelineStepParameters};
 use core_neural_core::snn_core::{ELECTRODE_CHANNELS, SNN_NEURONS};
-use serialport::SerialPort;
 use std::env;
 use std::io::{self, Read};
 use std::time::{Duration, Instant};
@@ -30,7 +29,7 @@ fn main() -> io::Result<()> {
     let mut port = serialport::new(port_name, 115_200)
         .timeout(Duration::from_millis(100))
         .open()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     // Optional: send the Cyton start-streaming command ('b')
     // Uncomment if the board is not already streaming.
@@ -63,22 +62,23 @@ fn main() -> io::Result<()> {
                 let t0 = Instant::now();
                 match OpenBciFrame::decode(&buf) {
                     Ok(frame) => {
-                        let (traj, stable) = pipe.step(
-                            &frame,
-                            &weights,
-                            0.9,
-                            &i_ext,
-                            &v_th,
-                            &mut matrix_a,
-                            &matrix_b,
-                            0.05,
-                            0.001,
-                            3.0,
-                        );
+                        let mut parameters = PipelineStepParameters {
+                            frame: &frame,
+                            weights: &weights,
+                            alpha: 0.9,
+                            i_ext: &i_ext,
+                            v_th: &v_th,
+                            matrix_a: &mut matrix_a,
+                            matrix_b: &matrix_b,
+                            contraction_c: 0.05,
+                            dt: 0.001,
+                            w_max: 3.0,
+                        };
+                        let (traj, stable) = pipe.step(&mut parameters);
                         let latency_us = t0.elapsed().as_micros();
                         packet_count += 1;
 
-                        if packet_count % 250 == 0 {
+                        if packet_count.is_multiple_of(250) {
                             // ~1 s at 250 Hz
                             println!(
                                 "{:6} | {:3} | {:7.3} | {:7.3} | {:5} | {:6} us",
