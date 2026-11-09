@@ -54,7 +54,7 @@ impl PipelineState {
 
     /// Process one `OpenBCI` frame through the full chain.
     /// Returns the updated trajectory state and whether the contractive bound held.
-    pub fn step(&mut self, parameters: PipelineStepParameters<'_>) -> (TrajectoryState, bool) {
+    pub fn step(&mut self, parameters: &mut PipelineStepParameters<'_>) -> (TrajectoryState, bool) {
         let electrodes = expand_openbci_to_electrodes(parameters.frame);
 
         let mut spikes = [0.0; SNN_NEURONS];
@@ -68,11 +68,11 @@ impl PipelineState {
         );
 
         // Project A onto the safe Frobenius ball before use.
-        project_matrix_a(parameters.matrix_a, parameters.w_max);
+        project_matrix_a(&mut *parameters.matrix_a, parameters.w_max);
 
         let prev = self.trajectory.state;
         self.trajectory
-            .update(parameters.matrix_a, parameters.matrix_b, &spikes);
+            .update(&mut *parameters.matrix_a, parameters.matrix_b, &spikes);
 
         let stable = check_contractive_stability(
             &prev,
@@ -119,7 +119,7 @@ mod tests {
         ];
         let matrix_b = [[0.0; SNN_NEURONS]; 4];
 
-        let (traj, stable) = pipe.step(PipelineStepParameters {
+        let mut parameters = PipelineStepParameters {
             frame: &frame,
             weights: &weights,
             alpha: 0.9,
@@ -130,7 +130,8 @@ mod tests {
             contraction_c: 0.1,
             dt: 0.001,
             w_max: 2.0,
-        });
+        };
+        let (traj, stable) = pipe.step(&mut parameters);
         assert!(stable || traj.state.iter().all(|&x| x.abs() < 10.0));
     }
 }
