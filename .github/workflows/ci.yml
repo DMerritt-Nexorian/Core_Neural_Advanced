@@ -36,10 +36,10 @@ jobs:
         run: cargo test --workspace
 
       - name: Verify cross-compilation ARM
-        run: cargo build --target thumbv7em-none-eabi
+        run: cargo build -p core_neural_core --target thumbv7em-none-eabi
 
       - name: Verify cross-compilation RISC-V
-        run: cargo build --target riscv32imac-unknown-none-elf
+        run: cargo build -p core_neural_core --target riscv32imac-unknown-none-elf
 
   kani:
     name: Formal Verification (Kani)
