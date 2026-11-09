@@ -29,7 +29,7 @@ fn main() -> io::Result<()> {
     let mut port = serialport::new(port_name, 115_200)
         .timeout(Duration::from_millis(100))
         .open()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     // Optional: send the Cyton start-streaming command ('b')
     // Uncomment if the board is not already streaming.
@@ -78,7 +78,7 @@ fn main() -> io::Result<()> {
                         let latency_us = t0.elapsed().as_micros();
                         packet_count += 1;
 
-                        if packet_count % 250 == 0 {
+                        if packet_count.is_multiple_of(250) {
                             // ~1 s at 250 Hz
                             println!(
                                 "{:6} | {:3} | {:7.3} | {:7.3} | {:5} | {:6} us",
