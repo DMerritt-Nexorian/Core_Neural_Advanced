@@ -72,7 +72,7 @@ impl PipelineState {
 
         let prev = self.trajectory.state;
         self.trajectory
-            .update(&mut *parameters.matrix_a, parameters.matrix_b, &spikes);
+            .update(&*parameters.matrix_a, parameters.matrix_b, &spikes);
 
         let stable = check_contractive_stability(
             &prev,
