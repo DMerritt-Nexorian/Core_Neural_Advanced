@@ -21,6 +21,11 @@ jobs:
           targets: thumbv7em-none-eabi, riscv32imac-unknown-none-elf
           components: clippy, rustfmt
 
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes pkg-config libudev-dev
+
       - name: Run fmt check
         run: cargo fmt -- --check
 
