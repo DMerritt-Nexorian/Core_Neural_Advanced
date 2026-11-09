@@ -63,6 +63,11 @@ jobs:
       - name: Run Go tests
         if: hashFiles('go.mod') != ''
         run: go test ./...
+      - name: Install native dependencies for OpenBCI serialport
+        if: hashFiles('core_neural_core/Cargo.toml') != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes pkg-config libudev-dev
       - name: Run Rust tests
         if: hashFiles('Cargo.toml') != ''
         shell: bash
