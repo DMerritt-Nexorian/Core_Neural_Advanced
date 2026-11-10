@@ -8,13 +8,15 @@ use crate::snn_core::{ELECTRODE_CHANNELS, SNN_NEURONS, SnnState};
 /// Channel map: for each of the 64 electrode slots, which Cyton channel (0-7) to use,
 /// or `None` to leave it zero.
 /// Default identity-style map places the 8 channels at evenly spaced indices.
-pub fn default_channel_map() -> [Option<usize>; ELECTRODE_CHANNELS] {
+pub const fn default_channel_map() -> [Option<usize>; ELECTRODE_CHANNELS] {
     let mut map = [None; ELECTRODE_CHANNELS];
-    for i in 0..8 {
+    let mut i = 0;
+    while i < 8 {
         let idx = i * 8;
         if idx < ELECTRODE_CHANNELS {
             map[idx] = Some(i);
         }
+        i += 1;
     }
     map
 }
