@@ -1,20 +1,36 @@
 //! End-to-end deterministic pipeline: OpenBCI frame → electrode vector → LIF → trajectory.
-//! Bridges the 8-channel Cyton protocol to the 64-channel SNN input by zero-padding
-//! and simple spatial replication (documented for later electrode-array expansion).
+//! Supports a configurable channel map from the 8 Cyton channels into the 64-channel SNN input.
 
 use crate::openbci_hal::OpenBciFrame;
 use crate::safety_core::{TrajectoryState, check_contractive_stability, project_matrix_a};
 use crate::snn_core::{ELECTRODE_CHANNELS, SNN_NEURONS, SnnState};
 
+/// Channel map: for each of the 64 electrode slots, which Cyton channel (0-7) to use,
+/// or `None` to leave it zero.
+/// Default identity-style map places the 8 channels at evenly spaced indices.
+pub fn default_channel_map() -> [Option<usize>; ELECTRODE_CHANNELS] {
+    let mut map = [None; ELECTRODE_CHANNELS];
+    for i in 0..8 {
+        let idx = i * 8;
+        if idx < ELECTRODE_CHANNELS {
+            map[idx] = Some(i);
+        }
+    }
+    map
+}
+
 /// Maps an 8-channel OpenBCI frame into the fixed 64-channel electrode vector
-/// expected by the SNN. Currently zero-pads and tiles the 8 channels.
-pub fn expand_openbci_to_electrodes(frame: &OpenBciFrame) -> [f32; ELECTRODE_CHANNELS] {
+/// using the provided channel map. Scales raw ADC counts toward a microvolt-ish range.
+pub fn expand_openbci_to_electrodes(
+    frame: &OpenBciFrame,
+    channel_map: &[Option<usize>; ELECTRODE_CHANNELS],
+) -> [f32; ELECTRODE_CHANNELS] {
     let mut electrodes = [0.0; ELECTRODE_CHANNELS];
-    // Simple deterministic mapping: place each of the 8 channels into 8 slots
-    // and leave the rest at 0.0. Later electrode arrays can replace this.
-    for (i, &ch) in frame.channels.iter().enumerate() {
-        if i * 8 < ELECTRODE_CHANNELS {
-            electrodes[i * 8] = ch as f32 * 1e-6; // scale raw ADC toward microvolt range
+    for (slot, &src) in channel_map.iter().enumerate() {
+        if let Some(ch) = src {
+            if ch < 8 {
+                electrodes[slot] = frame.channels[ch] as f32 * 1e-6;
+            }
         }
     }
     electrodes
@@ -25,6 +41,7 @@ pub fn expand_openbci_to_electrodes(frame: &OpenBciFrame) -> [f32; ELECTRODE_CHA
 pub struct PipelineState {
     pub snn: SnnState,
     pub trajectory: TrajectoryState,
+    pub channel_map: [Option<usize>; ELECTRODE_CHANNELS],
 }
 
 impl PipelineState {
@@ -32,7 +49,13 @@ impl PipelineState {
         Self {
             snn: SnnState::new(),
             trajectory: TrajectoryState::new(),
+            channel_map: default_channel_map(),
         }
+    }
+
+    /// Override the channel map (e.g. from a calibration file or CLI).
+    pub fn set_channel_map(&mut self, map: [Option<usize>; ELECTRODE_CHANNELS]) {
+        self.channel_map = map;
     }
 
     /// Process one OpenBCI frame through the full chain.
@@ -50,7 +73,7 @@ impl PipelineState {
         dt: f32,
         w_max: f32,
     ) -> (TrajectoryState, bool) {
-        let electrodes = expand_openbci_to_electrodes(frame);
+        let electrodes = expand_openbci_to_electrodes(frame, &self.channel_map);
 
         let mut spikes = [0.0; SNN_NEURONS];
         self.snn.update(&electrodes, weights, alpha, i_ext, v_th, &mut spikes);
@@ -80,13 +103,13 @@ mod tests {
 
     #[test]
     fn test_expand_and_step() {
-        let mut frame = OpenBciFrame {
+        let frame = OpenBciFrame {
             sample_id: 1,
             channels: [1000, -500, 0, 2000, -1000, 300, -200, 1500],
             aux: [0; 6],
         };
-        // Force a valid checksum-style packet is not required for this unit test
-        let electrodes = expand_openbci_to_electrodes(&frame);
+        let map = default_channel_map();
+        let electrodes = expand_openbci_to_electrodes(&frame, &map);
         assert_ne!(electrodes[0], 0.0);
 
         let mut pipe = PipelineState::new();
