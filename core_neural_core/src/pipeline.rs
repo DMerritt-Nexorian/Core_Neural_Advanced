@@ -2,8 +2,8 @@
 //! Supports a configurable channel map from the 8 Cyton channels into the 64-channel SNN input.
 
 use crate::openbci_hal::OpenBciFrame;
-use crate::safety_core::{TrajectoryState, check_contractive_stability, project_matrix_a};
-use crate::snn_core::{ELECTRODE_CHANNELS, SNN_NEURONS, SnnState};
+use crate::safety_core::{check_contractive_stability, project_matrix_a, TrajectoryState};
+use crate::snn_core::{SnnState, ELECTRODE_CHANNELS, SNN_NEURONS};
 
 /// Channel map: for each of the 64 electrode slots, which Cyton channel (0-7) to use,
 /// or `None` to leave it zero.
@@ -78,7 +78,8 @@ impl PipelineState {
         let electrodes = expand_openbci_to_electrodes(frame, &self.channel_map);
 
         let mut spikes = [0.0; SNN_NEURONS];
-        self.snn.update(&electrodes, weights, alpha, i_ext, v_th, &mut spikes);
+        self.snn
+            .update(&electrodes, weights, alpha, i_ext, v_th, &mut spikes);
 
         // Project A onto the safe Frobenius ball before use
         project_matrix_a(matrix_a, w_max);
@@ -127,7 +128,16 @@ mod tests {
         let matrix_b = [[0.0; SNN_NEURONS]; 4];
 
         let (traj, stable) = pipe.step(
-            &frame, &weights, 0.9, &i_ext, &v_th, &mut matrix_a, &matrix_b, 0.1, 0.001, 2.0,
+            &frame,
+            &weights,
+            0.9,
+            &i_ext,
+            &v_th,
+            &mut matrix_a,
+            &matrix_b,
+            0.1,
+            0.001,
+            2.0,
         );
         assert!(stable || traj.state.iter().all(|&x| x.abs() < 10.0));
     }
